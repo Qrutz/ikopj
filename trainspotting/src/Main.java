@@ -7,6 +7,8 @@ import TSim.TSimInterface;
 public class Main {
 
     private static final String TSIM_PATH_ON_LAB_COMPUTERS = "/chalmers/groups/tda384/tsim-0.84/out/bin/tsim";
+    private static final String LOCAL_TSIM_PATH = "./tsim-0.84/world/usr/local/bin/tsim";
+
     /**
      * The main method expects 3-4 arguments, e.g.:
      * - command line: java -cp bin Main "Lab1.map" 5 10 20
@@ -14,7 +16,8 @@ public class Main {
      */
     public static void main(String[] args) throws IOException, InterruptedException {
         if (args.length != 3 && args.length != 4) {
-            System.err.println("Main method expects 3-4 arguments: Lab1.map <Train1Speed> <Train2Speed> [SimulatorSpeed]");
+            System.err.println(
+                    "Main method expects 3-4 arguments: Lab1.map <Train1Speed> <Train2Speed> [SimulatorSpeed]");
             System.exit(1);
         }
 
@@ -24,8 +27,14 @@ public class Main {
         int tsim_speed = (args.length >= 4) ? Integer.parseInt(args[3]) : 20;
 
         String tsim;
-        if (Files.exists(Paths.get(TSIM_PATH_ON_LAB_COMPUTERS))) {
+        // Check for environment variable first
+        String tsimEnv = System.getenv("TSIM_PATH");
+        if (tsimEnv != null && Files.exists(Paths.get(tsimEnv))) {
+            tsim = tsimEnv;
+        } else if (Files.exists(Paths.get(TSIM_PATH_ON_LAB_COMPUTERS))) {
             tsim = TSIM_PATH_ON_LAB_COMPUTERS;
+        } else if (Files.exists(Paths.get(LOCAL_TSIM_PATH))) {
+            tsim = LOCAL_TSIM_PATH;
         } else {
             // Otherwise tsim must be in your $PATH
             tsim = "tsim";
