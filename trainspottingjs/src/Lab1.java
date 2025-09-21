@@ -30,7 +30,7 @@ public class Lab1 {
   }
 
   static final class StationLocks {
-    // TOP station (x=16, y=5 and y=3)
+    // TOP station (x=16, y=3 and y=5)
     final Semaphore topA_16_3 = new Semaphore(1, true); // default
     final Semaphore topB_16_5 = new Semaphore(1, true); // alternate
     // BOTTOM station (x=16, y=11 and y=13)
