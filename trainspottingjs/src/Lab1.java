@@ -26,13 +26,13 @@ public class Lab1 {
 
   // Which platform we currently hold (so we can release on departure)
   enum PlatformHeld {
-    TOP_A_16_5, TOP_B_16_3, BOT_A_16_11, BOT_B_16_13, NONE
+    TOP_A_16_3, TOP_B_16_5, BOT_A_16_11, BOT_B_16_13, NONE
   }
 
   static final class StationLocks {
     // TOP station (x=16, y=5 and y=3)
-    final Semaphore topA_16_5 = new Semaphore(1, true); // default
-    final Semaphore topB_16_3 = new Semaphore(1, true); // alternate
+    final Semaphore topA_16_3 = new Semaphore(1, true); // default
+    final Semaphore topB_16_5 = new Semaphore(1, true); // alternate
     // BOTTOM station (x=16, y=11 and y=13)
     final Semaphore botA_16_11 = new Semaphore(1, true); // default
     final Semaphore botB_16_13 = new Semaphore(1, true); // alternate
@@ -189,13 +189,13 @@ public class Lab1 {
           // TOP station approach (from left) when going UP: sensors x=14, y in {3,5}
           else if (x == 19 && (y == 8) && dir == Direction.UP) {
             stop();
-            // default topA (16,5), else topB (16,3)
-            if (st.topA_16_5.tryAcquire()) {
-              held = PlatformHeld.TOP_A_16_5;
+            // default topA (16,3), else topB (16,5)
+            if (st.topA_16_3.tryAcquire()) {
+              held = PlatformHeld.TOP_A_16_3;
               setSwitch(17, 7, TSimInterface.SWITCH_LEFT); // route to y=5
             } else {
-              st.topB_16_3.acquire();
-              held = PlatformHeld.TOP_B_16_3;
+              st.topB_16_5.acquire();
+              held = PlatformHeld.TOP_B_16_5;
               setSwitch(15, 3, TSimInterface.SWITCH_RIGHT); // route to y=3
             }
             go();
@@ -230,8 +230,8 @@ public class Lab1 {
 
             // release the exact platform we reserved
             switch (held) {
-              case TOP_A_16_5 -> st.topA_16_5.release();
-              case TOP_B_16_3 -> st.topB_16_3.release();
+              case TOP_A_16_3 -> st.topA_16_3.release();
+              case TOP_B_16_5 -> st.topB_16_5.release();
               case BOT_A_16_11 -> st.botA_16_11.release();
               case BOT_B_16_13 -> st.botB_16_13.release();
               case NONE -> {
