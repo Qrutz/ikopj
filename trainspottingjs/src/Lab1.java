@@ -5,9 +5,9 @@ import java.util.concurrent.Semaphore;
 public class Lab1 {
 
   public Lab1(int speed1, int speed2) {
-    // Shared fair binary semaphores (sections 1..6) for both trains
+    // Shared fair binary semaphores (sections 1..5) for both trains
     HashMap<Integer, Semaphore> sems = new HashMap<>();
-    for (int i = 1; i <= 6; i++)
+    for (int i = 1; i <= 5; i++)
       sems.put(i, new Semaphore(1, true));
 
     // Station occupancy semaphores (two per station)
@@ -41,7 +41,7 @@ public class Lab1 {
     private final int id;
     private int speed; // signed; flips at stations
     private Direction dir;
-    private final HashMap<Integer, Semaphore> sec; // section semaphores (1..6)
+    private final HashMap<Integer, Semaphore> sec; // section semaphores (1..5)
     private final StationLocks st; // station platform semaphores
     private final TSimInterface tsi = TSimInterface.getInstance();
 
@@ -104,7 +104,8 @@ public class Lab1 {
             continue;
           }
 
-          // ===== Section 2: right-side funnel (switches at (17,7) and (15,9)) =====
+          // ===== Section 2: right-side merge/split section (switches at (17,7) and
+          // (15,9)) =====
           else if (x == 14 && (y == 7 || y == 8)) {
             stop();
             if (dir == Direction.DOWN) {
@@ -162,7 +163,7 @@ public class Lab1 {
             continue;
           }
 
-          // ===== Section 5: left throat (switches (4,9) and (3,11)) =====
+          // ===== Section 5: left junction (switches (4,9) and (3,11)) =====
           else if (x == 6 && (y == 9 || y == 10)) {
             stop();
             if (dir == Direction.DOWN) {
