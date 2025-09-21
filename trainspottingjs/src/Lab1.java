@@ -1,6 +1,5 @@
 import TSim.*;
 import java.util.HashMap;
-import java.util.Stack;
 import java.util.concurrent.Semaphore;
 
 public class Lab1 {
@@ -45,8 +44,9 @@ public class Lab1 {
     private final HashMap<Integer, Semaphore> sec; // section semaphores (1..6)
     private final StationLocks st; // station platform semaphores
     private final TSimInterface tsi = TSimInterface.getInstance();
-    private final Stack<Integer> laneStack = new Stack<>();
+
     private PlatformHeld held = PlatformHeld.NONE;
+    private int currentLane = 0; // 0 = none, 3 or 4 when middle-lane section held
 
     public Train(int id, int speed, Direction dir,
         HashMap<Integer, Semaphore> sections, StationLocks stationLocks) {
@@ -132,15 +132,15 @@ public class Lab1 {
             stop();
             if (dir == Direction.DOWN) {
               if (sec.get(3).tryAcquire()) {
-                laneStack.push(3);
+                currentLane = 3;
                 setSwitch(15, 9, TSimInterface.SWITCH_RIGHT);
               } else {
                 sec.get(4).acquire();
-                laneStack.push(4);
+                currentLane = 4;
                 setSwitch(15, 9, TSimInterface.SWITCH_LEFT);
               }
             } else if (dir == Direction.UP) {
-              releaseLaneIfHeld();
+              releaseCurrentLane();
             }
             go();
             continue;
@@ -148,15 +148,15 @@ public class Lab1 {
             stop();
             if (dir == Direction.UP) {
               if (sec.get(3).tryAcquire()) {
-                laneStack.push(3);
+                currentLane = 3;
                 setSwitch(4, 9, TSimInterface.SWITCH_LEFT);
               } else {
                 sec.get(4).acquire();
-                laneStack.push(4);
+                currentLane = 4;
                 setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
               }
             } else { // DOWN
-              releaseLaneIfHeld();
+              releaseCurrentLane();
             }
             go();
             continue;
@@ -186,34 +186,34 @@ public class Lab1 {
           }
 
           // ===== Station approach (choose & reserve platform before entering) =====
-          // TOP station approach (from left) when going UP: sensors x=14, y in {3,5}
-          else if (x == 19 && (y == 8) && dir == Direction.UP) {
+          // TOP station approach (from right) when going UP
+          else if (x == 19 && y == 8 && dir == Direction.UP) {
             stop();
             // default topA (16,3), else topB (16,5)
             if (st.topA_16_3.tryAcquire()) {
               held = PlatformHeld.TOP_A_16_3;
-              setSwitch(17, 7, TSimInterface.SWITCH_LEFT); // route to y=5
+              // route to platform via appropriate switch setting(s)
+              setSwitch(17, 7, TSimInterface.SWITCH_LEFT);
             } else {
               st.topB_16_5.acquire();
               held = PlatformHeld.TOP_B_16_5;
-              setSwitch(15, 3, TSimInterface.SWITCH_RIGHT); // route to y=3
+              setSwitch(17, 7, TSimInterface.SWITCH_RIGHT); // example; adjust if needed
             }
             go();
             continue;
           }
 
-          // BOTTOM station approach (from left) when going DOWN: sensors x=14, y in
-          // {11,13}
-          else if (x == 1 && (y == 10) && dir == Direction.DOWN) {
+          // BOTTOM station approach (from left) when going DOWN
+          else if (x == 1 && y == 10 && dir == Direction.DOWN) {
             stop();
             // default botA (16,11), else botB (16,13)
             if (st.botA_16_11.tryAcquire()) {
               held = PlatformHeld.BOT_A_16_11;
-              setSwitch(3, 11, TSimInterface.SWITCH_RIGHT); // route to y=11
+              setSwitch(3, 11, TSimInterface.SWITCH_RIGHT);
             } else {
               st.botB_16_13.acquire();
               held = PlatformHeld.BOT_B_16_13;
-              setSwitch(3, 11, TSimInterface.SWITCH_LEFT); // route to y=13
+              setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
             }
             go();
             continue;
@@ -224,11 +224,9 @@ public class Lab1 {
           else if (x == 16 && (y == 13 || y == 11 || y == 5 || y == 3)) {
             stop();
             Thread.sleep(1000 + 20 * Math.abs(speed));
-            // reverse direction
             dir = (dir == Direction.UP ? Direction.DOWN : Direction.UP);
             speed = -speed;
 
-            // release the exact platform we reserved
             switch (held) {
               case TOP_A_16_3 -> st.topA_16_3.release();
               case TOP_B_16_5 -> st.topB_16_5.release();
@@ -273,10 +271,10 @@ public class Lab1 {
       }
     }
 
-    private void releaseLaneIfHeld() {
-      if (!laneStack.isEmpty()) {
-        int s = laneStack.pop();
-        sec.get(s).release();
+    private void releaseCurrentLane() {
+      if (currentLane == 3 || currentLane == 4) {
+        sec.get(currentLane).release();
+        currentLane = 0;
       }
     }
 
@@ -287,17 +285,5 @@ public class Lab1 {
         System.err.println("setSwitch(" + x + "," + y + "): " + e.getMessage());
       }
     }
-
-    // private void releasePlatformIfHeld() {
-    // switch (held) {
-    // case TOP_A_16_11 -> st.topA_16_11.release();
-    // case TOP_B_16_13 -> st.topB_16_13.release();
-    // case BOT_A_16_3 -> st.botA_16_3.release();
-    // case BOT_B_16_5 -> st.botB_16_5.release();
-    // case NONE -> {
-    // /* nothing */ }
-    // }
-    // held = PlatformHeld.NONE;
-    // }
   }
 }
