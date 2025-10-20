@@ -209,9 +209,11 @@ public class Lab1 {
             stop();
             // default botA (16,11), else botB (16,13)
             if (st.botA_16_11.tryAcquire()) {
+              acquireSec(5);
               held = PlatformHeld.BOT_A_16_11;
               setSwitch(3, 11, TSimInterface.SWITCH_RIGHT);
             } else {
+              acquireSec(5);
               st.botB_16_13.acquire();
               held = PlatformHeld.BOT_B_16_13;
               setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
