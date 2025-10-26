@@ -206,10 +206,13 @@ public class Lab1 {
             }
             go();
             continue;
-          } else if (x == 5 && (y == 11 || y == 13)) {
+          } else if (x == 8 && (y == 11 || y == 13)) {
             stop();
             if (dir == Direction.UP) {
-              acquireSec(5);
+              // ensure we hold section 5 before changing the switch
+              while (!sec.get(5).tryAcquire(100, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                // wait until we acquire section 5
+              }
               setSwitch(3, 11, (y == 11 ? TSimInterface.SWITCH_LEFT : TSimInterface.SWITCH_RIGHT));
             } else {
               releaseSec(5);
