@@ -115,7 +115,7 @@ public class Lab1 {
 
           // ===== Section 2: right-side merge/split section (switches at (17,7) and
           // (15,9)) =====
-          else if (x == 14 && (y == 7 || y == 8)) {
+          else if (x == 15 && (y == 7 || y == 8)) {
             stop();
             if (dir == Direction.DOWN) {
               // release the station sem
@@ -220,7 +220,7 @@ public class Lab1 {
 
           // ===== Station approach (choose & reserve platform before entering) =====
           // TOP station approach (from right) when going UP
-          else if (x == 19 && y == 8 && dir == Direction.UP) {
+          else if (x == 19 && y == 9 && dir == Direction.UP) {
             stop();
             // default topA (16,3), else topB (16,5)
             if (st.topA_16_3.tryAcquire()) {
