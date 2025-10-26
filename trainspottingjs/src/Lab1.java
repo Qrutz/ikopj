@@ -115,21 +115,11 @@ public class Lab1 {
 
           // ===== Section 2: right-side merge/split section (switches at (17,7) and
           // (15,9)) =====
-          else if (x == 15 && (y == 7 || y == 8)) {
+          else if (x == 14 && (y == 7 || y == 8)) {
             stop();
             if (dir == Direction.DOWN) {
               // release the station sem
-              if (held != PlatformHeld.NONE) {
-                switch (held) {
-                  case TOP_A_16_3 -> st.topA_16_3.release();
-                  case TOP_B_16_5 -> st.topB_16_5.release();
-                  case BOT_A_16_11 -> st.botA_16_11.release();
-                  case BOT_B_16_13 -> st.botB_16_13.release();
-                  case NONE -> {
-                  }
-                }
-                held = PlatformHeld.NONE;
-              }
+
               acquireSec(2);
               setSwitch(17, 7, (y == 7 ? TSimInterface.SWITCH_RIGHT : TSimInterface.SWITCH_LEFT));
             } else {
@@ -221,7 +211,7 @@ public class Lab1 {
 
           // ===== Station approach (choose & reserve platform before entering) =====
           // TOP station approach (from right) when going UP
-          else if (x == 19 && y == 9 && dir == Direction.UP) {
+          else if (x == 19 && y == 7 && dir == Direction.UP) {
             stop();
             // default topA (16,3), else topB (16,5)
             if (st.topA_16_3.tryAcquire()) {
@@ -233,6 +223,25 @@ public class Lab1 {
               st.topB_16_5.acquire();
               held = PlatformHeld.TOP_B_16_5;
               setSwitch(17, 7, TSimInterface.SWITCH_LEFT); // example; adjust if needed
+            }
+            go();
+            continue;
+          }
+
+          // 19 7 AND DOWN
+          else if (x == 19 && y == 7 && dir == Direction.DOWN) {
+            stop();
+            // default topA (16,3), else topB (16,5)
+            if (held != PlatformHeld.NONE) {
+              switch (held) {
+                case TOP_A_16_3 -> st.topA_16_3.release();
+                case TOP_B_16_5 -> st.topB_16_5.release();
+                case BOT_A_16_11 -> st.botA_16_11.release();
+                case BOT_B_16_13 -> st.botB_16_13.release();
+                case NONE -> {
+                }
+              }
+              held = PlatformHeld.NONE;
             }
             go();
             continue;
