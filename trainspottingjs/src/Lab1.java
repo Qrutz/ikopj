@@ -145,20 +145,18 @@ public class Lab1 {
             }
             go();
             continue;
-          } else if (x == 1 && y == 10) {
+          } else if (x == 1 && y == 10 && dir == Direction.UP) {
             stop();
-            if (dir == Direction.UP) {
-              if (sec.get(3).tryAcquire()) {
-                currentLane = 3;
-                setSwitch(4, 9, TSimInterface.SWITCH_LEFT);
-              } else {
-                sec.get(4).acquire();
-                currentLane = 4;
-                setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
-              }
-            } else { // DOWN
-              releaseCurrentLane();
+
+            if (sec.get(3).tryAcquire()) {
+              currentLane = 3;
+              setSwitch(4, 9, TSimInterface.SWITCH_LEFT);
+            } else {
+              sec.get(4).acquire();
+              currentLane = 4;
+              setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
             }
+
             go();
             continue;
           }
@@ -191,13 +189,13 @@ public class Lab1 {
           else if (x == 19 && y == 8 && dir == Direction.UP) {
             stop();
             // default topA (16,3), else topB (16,5)
-            if (st.topA_16_3.tryAcquire()) {
-              held = PlatformHeld.TOP_A_16_3;
+            if (st.topB_16_5.tryAcquire()) {
+              held = PlatformHeld.TOP_B_16_5;
               // route to platform via appropriate switch setting(s)
               setSwitch(17, 7, TSimInterface.SWITCH_LEFT);
             } else {
-              st.topB_16_5.acquire();
-              held = PlatformHeld.TOP_B_16_5;
+              st.topA_16_3.acquire();
+              held = PlatformHeld.TOP_A_16_3;
               setSwitch(17, 7, TSimInterface.SWITCH_RIGHT); // example; adjust if needed
             }
             go();
@@ -207,13 +205,12 @@ public class Lab1 {
           // BOTTOM station approach (from left) when going DOWN
           else if (x == 1 && y == 10 && dir == Direction.DOWN) {
             stop();
+            releaseCurrentLane();
             // default botA (16,11), else botB (16,13)
             if (st.botA_16_11.tryAcquire()) {
-              acquireSec(5);
               held = PlatformHeld.BOT_A_16_11;
               setSwitch(3, 11, TSimInterface.SWITCH_RIGHT);
             } else {
-              acquireSec(5);
               st.botB_16_13.acquire();
               held = PlatformHeld.BOT_B_16_13;
               setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
