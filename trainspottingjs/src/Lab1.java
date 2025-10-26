@@ -4,6 +4,14 @@ import java.util.concurrent.Semaphore;
 
 public class Lab1 {
 
+  enum PlatformHeld {
+    NONE,
+    TOP_A_16_3,
+    TOP_B_16_5,
+    BOT_A_16_11,
+    BOT_B_16_13
+  }
+
   public Lab1(int speed1, int speed2) {
     // Shared fair binary semaphores (sections 1..5) for both trains
     HashMap<Integer, Semaphore> sems = new HashMap<>();
@@ -13,8 +21,12 @@ public class Lab1 {
     // Station occupancy semaphores (two per station)
     StationLocks stationLocks = new StationLocks();
 
-    Train t1 = new Train(1, speed1, Direction.DOWN, sems, stationLocks);
-    Train t2 = new Train(2, speed2, Direction.UP, sems, stationLocks);
+    stationLocks.topA_16_3.acquireUninterruptibly(); // mark TOP A as already occupied
+    stationLocks.botA_16_11.acquireUninterruptibly(); // mark BOT A as already occupied
+
+    Train t1 = new Train(1, speed1, Direction.DOWN, sems, stationLocks, PlatformHeld.TOP_A_16_3);
+    Train t2 = new Train(2, speed2, Direction.UP, sems, stationLocks, PlatformHeld.BOT_A_16_11);
+
     new Thread(t1).start();
     new Thread(t2).start();
   }
@@ -24,17 +36,13 @@ public class Lab1 {
   }
 
   // Which platform we currently hold (so we can release on departure)
-  enum PlatformHeld {
-    TOP_A_16_3, TOP_B_16_5, BOT_A_16_11, BOT_B_16_13, NONE
-  }
 
   static final class StationLocks {
     // TOP station (x=16, y=3 and y=5)
-    final Semaphore topA_16_3 = new Semaphore(1, true); // default
-    final Semaphore topB_16_5 = new Semaphore(1, true); // alternate
-    // BOTTOM station (x=16, y=11 and y=13)
-    final Semaphore botA_16_11 = new Semaphore(1, true); // default
-    final Semaphore botB_16_13 = new Semaphore(1, true); // alternate
+    final Semaphore topA_16_3 = new Semaphore(1, true);
+    final Semaphore topB_16_5 = new Semaphore(1, true);
+    final Semaphore botA_16_11 = new Semaphore(1, true);
+    final Semaphore botB_16_13 = new Semaphore(1, true);
   }
 
   public class Train implements Runnable {
@@ -49,12 +57,13 @@ public class Lab1 {
     private int currentLane = 0; // 0 = none, 3 or 4 when middle-lane section held
 
     public Train(int id, int speed, Direction dir,
-        HashMap<Integer, Semaphore> sections, StationLocks stationLocks) {
+        HashMap<Integer, Semaphore> sections, StationLocks stationLocks, PlatformHeld held) {
       this.id = id;
       this.speed = speed;
       this.dir = dir;
       this.sec = sections;
       this.st = stationLocks;
+      this.held = held;
     }
 
     @Override
@@ -109,10 +118,23 @@ public class Lab1 {
           else if (x == 14 && (y == 7 || y == 8)) {
             stop();
             if (dir == Direction.DOWN) {
+              // release the station sem
+              if (held != PlatformHeld.NONE) {
+                switch (held) {
+                  case TOP_A_16_3 -> st.topA_16_3.release();
+                  case TOP_B_16_5 -> st.topB_16_5.release();
+                  case BOT_A_16_11 -> st.botA_16_11.release();
+                  case BOT_B_16_13 -> st.botB_16_13.release();
+                  case NONE -> {
+                  }
+                }
+                held = PlatformHeld.NONE;
+              }
               acquireSec(2);
               setSwitch(17, 7, (y == 7 ? TSimInterface.SWITCH_RIGHT : TSimInterface.SWITCH_LEFT));
             } else {
               releaseSec(2);
+
             }
             go();
             continue;
@@ -147,6 +169,18 @@ public class Lab1 {
             continue;
           } else if (x == 1 && y == 10 && dir == Direction.UP) {
             stop();
+            // relase station semaphore when leaving
+            if (held != PlatformHeld.NONE) {
+              switch (held) {
+                case TOP_A_16_3 -> st.topA_16_3.release();
+                case TOP_B_16_5 -> st.topB_16_5.release();
+                case BOT_A_16_11 -> st.botA_16_11.release();
+                case BOT_B_16_13 -> st.botB_16_13.release();
+                case NONE -> {
+                }
+              }
+              held = PlatformHeld.NONE;
+            }
 
             if (sec.get(3).tryAcquire()) {
               currentLane = 3;
@@ -189,14 +223,15 @@ public class Lab1 {
           else if (x == 19 && y == 8 && dir == Direction.UP) {
             stop();
             // default topA (16,3), else topB (16,5)
-            if (st.topB_16_5.tryAcquire()) {
-              held = PlatformHeld.TOP_B_16_5;
-              // route to platform via appropriate switch setting(s)
-              setSwitch(17, 7, TSimInterface.SWITCH_LEFT);
-            } else {
-              st.topA_16_3.acquire();
+            if (st.topA_16_3.tryAcquire()) {
               held = PlatformHeld.TOP_A_16_3;
-              setSwitch(17, 7, TSimInterface.SWITCH_RIGHT); // example; adjust if needed
+              // route to platform via appropriate switch setting(s)
+              setSwitch(17, 7, TSimInterface.SWITCH_RIGHT);
+
+            } else {
+              st.topB_16_5.acquire();
+              held = PlatformHeld.TOP_B_16_5;
+              setSwitch(17, 7, TSimInterface.SWITCH_LEFT); // example; adjust if needed
             }
             go();
             continue;
@@ -226,16 +261,6 @@ public class Lab1 {
             Thread.sleep(1000 + 20 * Math.abs(speed));
             dir = (dir == Direction.UP ? Direction.DOWN : Direction.UP);
             speed = -speed;
-
-            switch (held) {
-              case TOP_A_16_3 -> st.topA_16_3.release();
-              case TOP_B_16_5 -> st.topB_16_5.release();
-              case BOT_A_16_11 -> st.botA_16_11.release();
-              case BOT_B_16_13 -> st.botB_16_13.release();
-              case NONE -> {
-              }
-            }
-            held = PlatformHeld.NONE;
 
             tsi.setSpeed(id, speed);
             continue;
