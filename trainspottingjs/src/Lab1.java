@@ -210,9 +210,7 @@ public class Lab1 {
             stop();
             if (dir == Direction.UP) {
               // ensure we hold section 5 before changing the switch
-              while (!sec.get(5).tryAcquire(100, java.util.concurrent.TimeUnit.MILLISECONDS)) {
-                // wait until we acquire section 5
-              }
+              acquireSec(5);
               setSwitch(3, 11, (y == 11 ? TSimInterface.SWITCH_LEFT : TSimInterface.SWITCH_RIGHT));
             } else {
               releaseSec(5);
